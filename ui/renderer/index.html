@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' blob:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Blockchain Forensics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body style="background:#F7FAFD">
+  <header id="titlebar" aria-label="Application title bar">
+    <div class="titlebar-drag">
+      <div class="titlebar-brand" id="titlebar-brand">
+        <div class="titlebar-mark" id="titlebar-mark">ABF</div>
+        <div class="titlebar-identity">
+          <span class="titlebar-name" id="titlebar-name">Agentic Blockchain Forensics</span>
+          <span class="titlebar-divider" aria-hidden="true"></span>
+          <span class="titlebar-sub" id="titlebar-sub">Blockchain-Backed</span>
+        </div>
+        <div class="titlebar-accent" aria-hidden="true" title="Immutable ledger">
+          <span class="titlebar-chain">⬡</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="app">
+    <aside id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ABF</div>
+        <div class="brand-text">
+          <div class="brand-name">Agentic Blockchain Forensics</div>
+          <div class="brand-sub">Blockchain-Backed</div>
+        </div>
+      </div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⬡</span> Dashboard</button>
+        <button class="nav-item" data-view="cases"><span class="nav-icon">◈</span> Cases</button>
+        <button class="nav-item" data-view="evidence"><span class="nav-icon">◉</span> Evidence Vault</button>
+        <button class="nav-item" data-view="chat"><span class="nav-icon">◎</span> AI Agents</button>
+        <button class="nav-item" data-view="reports"><span class="nav-icon">▤</span> Reports</button>
+        <button class="nav-item" data-view="blockchain"><span class="nav-icon">⬡</span> Blockchain Ledger</button>
+        <button class="nav-item" data-view="investigators"><span class="nav-icon">◯</span> Investigators</button>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">◌</span> Settings</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="model-pill">
+          <span class="dot green"></span>
+          qwen2.5:3b — Offline · Active
+        </div>
+      </div>
+    </aside>
+
+    <div id="main">
+      <header id="topbar">
+        <h1 id="page-title">Dashboard</h1>
+        <div class="status-row">
+          <div class="status-chip" id="fabric-status">
+            <span class="dot grey" id="fabric-dot"></span>
+            Chain Ledger · <span id="fabric-label">Checking</span>
+          </div>
+          <div class="status-chip" id="agents-status">
+            <span class="dot grey" id="agents-dot"></span>
+            Agents <span id="agents-label">Idle</span>
+          </div>
+          <div class="case-chip" id="active-case-chip" title="Active case">No case selected</div>
+        </div>
+      </header>
+      <main id="content"></main>
+    </div>
+  </div>
+
+  <div id="modal-root" hidden></div>
+  <div id="toast-root"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "agentic-blockchain-forensics-ui",
+  "version": "1.0.0",
+  "description": "Multi-agent digital forensics desktop with blockchain-backed evidence integrity",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"No unit tests — run npm start for manual E2E\""
+  },
+  "author": "Syed Abdul Rehman Nasir",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^41.7.1"
+  }
+}

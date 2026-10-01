@@ -1,0 +1,28 @@
+{
+  "branding": {
+    "orgName": "Agentic Blockchain Forensics",
+    "orgMark": "ABF",
+    "orgSubtitle": "Multi-Agent · Blockchain-Backed",
+    "windowTitle": "Agentic Blockchain Forensics"
+  },
+  "investigator": {
+    "name": "Investigator",
+    "initials": "IN",
+    "role": "Digital Forensics Investigator",
+    "chainId": "User1@org1.example.com",
+    "workspace": "WSL2 Ubuntu 22.04 + Windows 11",
+    "gpu": "NVIDIA GTX 1650 4GB (CUDA 11.8)"
+  },
+  "system": {
+    "mode": "Offline · Single Investigator"
+  },
+  "chat": {
+    "quickQueries": [
+      "List all USB devices connected to this machine",
+      "Show failed login attempts after midnight",
+      "What programs were executed during the incident window?",
+      "Are there any suspicious scheduled tasks or startup entries?",
+      "Summarize the key findings of this investigation"
+    ]
+  }
+}

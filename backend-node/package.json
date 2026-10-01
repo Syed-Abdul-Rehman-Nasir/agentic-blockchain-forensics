@@ -1,0 +1,22 @@
+{
+  "name": "agentic-blockchain-forensics-api",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Syed Abdul Rehman Nasir",
+  "license": "UNLICENSED",
+  "description": "Express orchestration API for multi-agent forensic analysis and blockchain custody",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@hyperledger/fabric-gateway": "^1.11.0",
+    "axios": "^1.19.0",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

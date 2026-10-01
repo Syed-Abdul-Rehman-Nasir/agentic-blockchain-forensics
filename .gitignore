@@ -1,0 +1,50 @@
+# Python
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Local data & large forensic images (keep directory placeholders)
+data/forensic.db
+data/forensic.db-*
+data/chain.db
+data/chain.db-*
+data/training_data.csv
+data/chromadb/**
+!data/chromadb/.gitkeep
+data/reports/**
+!data/reports/.gitkeep
+data/test_images/*
+!data/test_images/.gitkeep
+
+# Models (trained artifacts — regenerate locally)
+!models/.gitkeep
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+backend-node/.fabric-endpoints.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Node (future phases)
+node_modules/
+dist/
+build/
+
+# Cursor rules
+.cursor/
+
+# Documentation folder (local only)
+docs/
+
+# Developer test scripts (machine-specific paths)
+3 phase test/
