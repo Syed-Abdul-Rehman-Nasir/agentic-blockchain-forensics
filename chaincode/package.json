@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "fabric-chaincode-node start",
-    "start:server-nontls": "fabric-chaincode-node server --chaincode-address=$CHAINCODE_SERVER_ADDRESS --chaincode-id=$CHAINCODE_ID"
+    "start:server-nontls": "fabric-chaincode-node server --chaincode-address=$CHAINCODE_SERVER_ADDRESS --chaincode-id=$CHAINCODE_ID",
+    "test": "node --test ../tests/node/test_forensic_contract.js"
   },
   "engineStrict": true,
   "author": "Syed Abdul Rehman Nasir",
