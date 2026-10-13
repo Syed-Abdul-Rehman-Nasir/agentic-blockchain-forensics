@@ -9,12 +9,21 @@
 #   ./scripts/run-agentic-forensics.sh status   # check health
 #   ./scripts/run-agentic-forensics.sh attach   # reattach to running session
 
-set -e
+set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SESSION="agentic-forensics"
 LOG_DIR="/tmp/agentic-forensics-logs"
 mkdir -p "$LOG_DIR"
+
+# Load backend-node/.env so OLLAMA_HOST / OLLAMA_MODEL / FORENSIC_DB_PATH apply.
+ENV_FILE="$PROJECT_ROOT/backend-node/.env"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$ENV_FILE"
+  set +a
+fi
 
 # ---------- Colors ----------
 GREEN='\033[0;32m'
@@ -49,14 +58,14 @@ cmd_status() {
     log "Service Health Check"
     echo "----------------------------------------"
 
-    AI_HEALTH=$(curl -s -m 3 http://localhost:8000/health 2>/dev/null)
+    AI_HEALTH=$(curl -s -m 3 http://localhost:8000/health 2>/dev/null || true)
     if echo "$AI_HEALTH" | grep -q "ok"; then
         ok "AI Service (:8000)      — UP"
     else
         err "AI Service (:8000)      — DOWN"
     fi
 
-    NODE_HEALTH=$(curl -s -m 3 http://localhost:3000/health 2>/dev/null)
+    NODE_HEALTH=$(curl -s -m 3 http://localhost:3000/health 2>/dev/null || true)
     if echo "$NODE_HEALTH" | grep -q "ok"; then
         ok "Node Backend (:3000)    — UP"
     else
@@ -69,8 +78,8 @@ cmd_status() {
         warn "Fabric Network          — DOWN (optional — mockChain fallback active)"
     fi
 
-    if [ -n "$OLLAMA_HOST" ]; then
-        OLLAMA_OK=$(curl -s -m 3 "$OLLAMA_HOST/api/tags" 2>/dev/null | grep -c "qwen2.5")
+    if [ -n "${OLLAMA_HOST:-}" ]; then
+        OLLAMA_OK=$(curl -s -m 3 "$OLLAMA_HOST/api/tags" 2>/dev/null | grep -c "qwen2.5" || true)
         if [ "$OLLAMA_OK" != "0" ]; then
             ok "Ollama (qwen2.5:3b)     — UP"
         else
@@ -108,11 +117,15 @@ cmd_start() {
     log "Starting Agentic Blockchain Forensics in tmux session '$SESSION'..."
     log "Logs: $LOG_DIR"
 
-    export OLLAMA_HOST=http://$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):11434
+    # Prefer configured OLLAMA_HOST; otherwise derive Windows host IP from resolv.conf.
+    if [ -z "${OLLAMA_HOST:-}" ]; then
+      WIN_IP="$(awk '/nameserver/ {print $2; exit}' /etc/resolv.conf)"
+      export OLLAMA_HOST="http://${WIN_IP}:11434"
+    fi
 
     tmux new-session -d -s "$SESSION" -n "ai-service" -c "$PROJECT_ROOT"
     tmux send-keys -t "$SESSION:ai-service" \
-        "source .venv/bin/activate && uvicorn ai_service.main:app --host 0.0.0.0 --port 8000 2>&1 | tee $LOG_DIR/ai-service.log" C-m
+        "set -a; [ -f backend-node/.env ] && . backend-node/.env; set +a; export OLLAMA_HOST='${OLLAMA_HOST}'; source .venv/bin/activate && uvicorn ai_service.main:app --host 0.0.0.0 --port 8000 2>&1 | tee $LOG_DIR/ai-service.log" C-m
 
     tmux new-window -t "$SESSION" -n "backend" -c "$PROJECT_ROOT/backend-node"
     tmux send-keys -t "$SESSION:backend" \
@@ -125,14 +138,14 @@ cmd_start() {
     log "Waiting for services to come up..."
     sleep 8
 
-    AI_OK=$(curl -s -m 3 http://localhost:8000/health 2>/dev/null | grep -c "ok")
-    NODE_OK=$(curl -s -m 3 http://localhost:3000/health 2>/dev/null | grep -c "ok")
+    AI_OK=$(curl -s -m 3 http://localhost:8000/health 2>/dev/null | grep -c "ok" || true)
+    NODE_OK=$(curl -s -m 3 http://localhost:3000/health 2>/dev/null | grep -c "ok" || true)
 
     echo ""
     if [ "$AI_OK" != "0" ]; then ok "AI Service is UP"; else err "AI Service FAILED — check: tmux attach -t $SESSION (window: ai-service)"; fi
     if [ "$NODE_OK" != "0" ]; then ok "Node Backend is UP"; else err "Node Backend FAILED — check: tmux attach -t $SESSION (window: backend)"; fi
 
-    OLLAMA_OK=$(curl -s -m 3 "$OLLAMA_HOST/api/tags" 2>/dev/null | grep -c "qwen2.5")
+    OLLAMA_OK=$(curl -s -m 3 "$OLLAMA_HOST/api/tags" 2>/dev/null | grep -c "qwen2.5" || true)
     if [ "$OLLAMA_OK" != "0" ]; then
         ok "Ollama reachable (qwen2.5:3b found)"
     else

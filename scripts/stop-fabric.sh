@@ -9,6 +9,28 @@ TEST_NETWORK="$FABRIC_SAMPLES/test-network"
 export PATH="${HOME}/bin:${FABRIC_SAMPLES}/bin:${PATH}"
 export FABRIC_CFG_PATH="${FABRIC_SAMPLES}/config"
 
+# Undo temporary proxy patches left by start-fabric.sh (including interrupted runs).
+restore_env_patches() {
+  local env_var="$TEST_NETWORK/scripts/envVar.sh"
+  local orderer_sh="$TEST_NETWORK/scripts/orderer.sh"
+  if [ ! -d "$TEST_NETWORK/scripts" ]; then
+    return 0
+  fi
+  if [ -f "$env_var.abf.bak" ]; then
+    mv -f "$env_var.abf.bak" "$env_var"
+    echo "[fabric] Restored scripts/envVar.sh from .abf.bak"
+  fi
+  if [ -f "$orderer_sh.abf.bak" ]; then
+    mv -f "$orderer_sh.abf.bak" "$orderer_sh"
+    echo "[fabric] Restored scripts/orderer.sh from .abf.bak"
+  fi
+  find "$TEST_NETWORK/scripts" -type f -name '*.abf.bak' 2>/dev/null \
+    | while read -r bak; do
+        mv -f "$bak" "${bak%.abf.bak}"
+        echo "[fabric] Restored ${bak%.abf.bak} from .abf.bak"
+      done
+}
+
 echo "[fabric] Stopping Fabric test-network (if present)..."
 
 if [ -d "$TEST_NETWORK" ]; then
@@ -19,6 +41,8 @@ if [ -d "$TEST_NETWORK" ]; then
 else
   echo "[fabric] WARN: $TEST_NETWORK not found - skipping network.sh down"
 fi
+
+restore_env_patches
 
 echo "[fabric] Removing leftover Fabric / CCAAS / port-fix containers..."
 docker ps -aq --format '{{.ID}} {{.Names}}' 2>/dev/null \
