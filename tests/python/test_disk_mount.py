@@ -17,6 +17,7 @@ from ai_service.db.database import create_case, get_connection, initialise_db
 from ai_service.parsers.disk_mount import (
     EWF_MAGIC,
     SplitRawImgInfo,
+    _compute_hash_cpu_pipeline,
     _has_ewf_signature,
     _open_image,
     classify_image,
@@ -159,6 +160,42 @@ def test_extract_file_closes_pytsk_handle(tmp_path):
     assert written == 4
     assert out.read_bytes() == b"DATA"
     assert opened.closed is True
+
+
+class _PartialImg:
+    """Fake image that advertises more bytes than it can deliver."""
+
+    def __init__(self, payload: bytes, claimed_size: int):
+        self._payload = payload
+        self._claimed = claimed_size
+
+    def get_size(self) -> int:
+        return self._claimed
+
+    def read(self, offset: int, size: int) -> bytes:
+        if offset >= len(self._payload):
+            return b""
+        return self._payload[offset : offset + size]
+
+
+def test_compute_dual_hashes_rejects_incomplete_stream():
+    img = _PartialImg(b"ABCD", claimed_size=16)
+    with pytest.raises(RuntimeError, match="incomplete image stream"):
+        compute_dual_hashes(img)
+
+
+def test_compute_hash_cpu_pipeline_rejects_incomplete_stream():
+    img = _PartialImg(b"ABCD", claimed_size=32)
+    with pytest.raises(RuntimeError, match="incomplete image stream"):
+        _compute_hash_cpu_pipeline(img)
+
+
+def test_compute_dual_hashes_accepts_complete_stream():
+    payload = b"complete-hash-payload"
+    img = _PartialImg(payload, claimed_size=len(payload))
+    md5_hex, sha_hex = compute_dual_hashes(img)
+    assert md5_hex == hashlib.md5(payload).hexdigest()
+    assert sha_hex == hashlib.sha256(payload).hexdigest()
 
 
 def test_ingest_ewf_named_raw_streams_md5_not_ewfinfo(tmp_path, temp_db, monkeypatch):

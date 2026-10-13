@@ -477,10 +477,19 @@ def _compute_hash_gpu(img_info) -> Optional[str]:
             digest.update(cp.asnumpy(arr).tobytes())
             del arr
             offset += len(data)
+        _require_complete_read(total, offset, context="system hash (GPU)")
         return digest.hexdigest()
     except Exception as exc:
         logger.debug("GPU hash failed, falling back to CPU: %s", exc)
         return None
+
+
+def _require_complete_read(total: int, bytes_read: int, *, context: str) -> None:
+    """Raise when a streamed hash consumed fewer bytes than the advertised image size."""
+    if bytes_read != total:
+        raise RuntimeError(
+            f"{context}: incomplete image stream — read {bytes_read} of {total} bytes"
+        )
 
 
 def _compute_hash_cpu_pipeline(img_info) -> str:
@@ -490,21 +499,25 @@ def _compute_hash_cpu_pipeline(img_info) -> str:
 
     _SENTINEL = object()
     chunk_q: _queue.Queue = _queue.Queue(maxsize=4)  # buffer 4 chunks ahead
+    reader_error: List[BaseException] = []
+    bytes_read = {"n": 0}
 
     def _reader():
         offset = 0
         total = img_info.get_size()
-        while offset < total:
-            to_read = min(CHUNK_SIZE, total - offset)
-            try:
+        try:
+            while offset < total:
+                to_read = min(CHUNK_SIZE, total - offset)
                 data = img_info.read(offset, to_read)
-            except Exception:
-                break
-            if not data:
-                break
-            chunk_q.put(data)
-            offset += len(data)
-        chunk_q.put(_SENTINEL)
+                if not data:
+                    break
+                chunk_q.put(data)
+                offset += len(data)
+            bytes_read["n"] = offset
+        except BaseException as exc:  # propagate to hasher thread
+            reader_error.append(exc)
+        finally:
+            chunk_q.put(_SENTINEL)
 
     reader_thread = _threading.Thread(target=_reader, daemon=True)
     reader_thread.start()
@@ -517,6 +530,13 @@ def _compute_hash_cpu_pipeline(img_info) -> str:
         digest.update(chunk)
 
     reader_thread.join(timeout=10)
+    if reader_error:
+        raise RuntimeError(
+            f"system hash read failed: {reader_error[0]}"
+        ) from reader_error[0]
+    _require_complete_read(
+        img_info.get_size(), bytes_read["n"], context="system hash (CPU pipeline)"
+    )
     return digest.hexdigest()
 
 
@@ -552,6 +572,7 @@ def compute_dual_hashes(img_info: pytsk3.Img_Info) -> Tuple[str, str]:
         md5.update(data)
         sha.update(data)
         offset += len(data)
+    _require_complete_read(total, offset, context="dual hash stream")
     return md5.hexdigest(), sha.hexdigest()
 
 
@@ -565,6 +586,7 @@ def _stream_into(img_info: pytsk3.Img_Info, digest) -> None:
             break
         digest.update(data)
         offset += len(data)
+    _require_complete_read(total, offset, context="hash stream")
 
 
 # ---------------------------------------------------------------------------
