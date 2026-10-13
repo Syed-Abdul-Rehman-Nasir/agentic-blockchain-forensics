@@ -1,0 +1,67 @@
+name: Bug report
+description: Report incorrect behaviour in the investigation stack
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Agentic Blockchain Forensics.
+        Do **not** attach real disk images, case databases, credentials, or personally identifiable evidence.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong in one or two sentences?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Electron UI
+        - Node.js API
+        - Python AI service
+        - Blockchain / mock ledger
+        - Documentation / tooling
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps using mock ledger and disposable test data.
+      placeholder: |
+        1. Start AI service, Node API, and UI in mock-ledger mode
+        2. Create or open a disposable case
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: "Example: WSL2 Ubuntu 22.04, Python 3.11, Node 20, mock ledger, Ollama qwen2.5:3b"
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Evidence safety
+      options:
+        - label: I have not uploaded real forensic images, secrets, or personal data.
+          required: true

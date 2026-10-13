@@ -1,0 +1,54 @@
+name: Feature request
+description: Propose an improvement that respects offline and evidence-integrity goals
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the capability you would like and why it matters for offline investigation
+        or blockchain-backed chain of custody.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What investigator workflow is difficult or incomplete today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Summarise the desired behaviour without requiring cloud services for core analysis.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — other approaches you evaluated.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Agentic / LangGraph workflow
+        - Forensic parsers
+        - Threat scoring / ML
+        - Evidence chat / RAG
+        - Blockchain custody
+        - Desktop UI / reporting
+        - Documentation / developer experience
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints
+      options:
+        - label: The proposal can work offline after setup (or clearly states any optional online dependency).
+          required: true
+        - label: The proposal does not require committing real evidence or secrets to the repository.
+          required: true
