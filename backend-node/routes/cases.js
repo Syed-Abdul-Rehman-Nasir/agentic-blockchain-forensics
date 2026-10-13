@@ -33,14 +33,29 @@ router.get('/', async (_req, res) => {
   }
 });
 
+const ACTIVE_AI_STATUSES = new Set([
+  'analysing',
+  'queued',
+  'pending',
+  'mounting',
+]);
+
 /** POST /api/cases/:id/analyse — fire-and-forget investigation */
 router.post('/:id/analyse', async (req, res) => {
   const caseId = req.params.id;
   try {
+    if (orchestratorService.isInvestigationActive(caseId)) {
+      return res.status(409).json({
+        error: 'Investigation already in progress for this case',
+        case_id: caseId,
+      });
+    }
+
     let imagePath = req.body?.image_path;
+    let aiStatus = null;
     if (!imagePath) {
-      const status = await aiService.getStatus(caseId).catch(() => null);
-      imagePath = status?.image_path;
+      aiStatus = await aiService.getStatus(caseId).catch(() => null);
+      imagePath = aiStatus?.image_path;
     }
     if (!imagePath) {
       const c = await aiService.getCase(caseId);
@@ -48,6 +63,17 @@ router.post('/:id/analyse', async (req, res) => {
     }
     if (!imagePath) {
       return res.status(400).json({ error: 'image_path required' });
+    }
+
+    if (!aiStatus) {
+      aiStatus = await aiService.getStatus(caseId).catch(() => null);
+    }
+    if (aiStatus && ACTIVE_AI_STATUSES.has(String(aiStatus.status || '').toLowerCase())) {
+      return res.status(409).json({
+        error: 'Analysis already in progress for this case',
+        case_id: caseId,
+        status: aiStatus.status,
+      });
     }
 
     // Do not await — blockchain and analysis must not block this response

@@ -27,6 +27,12 @@ function getInvestigation(caseId) {
   return investigations.get(caseId) || null;
 }
 
+/** True while analyse/blockchain phases are still running for this case. */
+function isInvestigationActive(caseId) {
+  const phase = investigations.get(caseId)?.phase;
+  return phase === 'analysing' || phase === 'blockchain';
+}
+
 async function pollUntilDone(caseId) {
   const deadline = Date.now() + ANALYSIS_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -285,5 +291,8 @@ module.exports = {
   logChatAction,
   verifyEvidence,
   getInvestigation,
+  isInvestigationActive,
   commitBlockchain,
+  // Test hook — do not use from production routes.
+  _investigations: investigations,
 };
