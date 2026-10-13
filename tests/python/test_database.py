@@ -9,9 +9,13 @@ import pytest
 import ai_service.db.database as database
 from ai_service.db.database import (
     create_case,
+    get_artifacts_for_case,
+    get_case,
     get_completed_stages,
     get_connection,
     initialise_db,
+    list_cases,
+    log_audit,
     mark_stage_complete,
     update_case_hashes,
 )
@@ -92,3 +96,60 @@ def test_mark_stage_complete_and_get_completed_stages(temp_db):
 def test_wal_mode_active(temp_db):
     mode = temp_db.execute("PRAGMA journal_mode").fetchone()[0]
     assert mode.lower() == "wal"
+
+
+def test_get_case_returns_dict_or_none(temp_db):
+    create_case("CASE_GET", "Lookup", "/img.E01", conn=temp_db)
+    found = get_case("CASE_GET", conn=temp_db)
+    assert found is not None
+    assert found["case_id"] == "CASE_GET"
+    assert found["name"] == "Lookup"
+    assert get_case("MISSING", conn=temp_db) is None
+
+
+def test_list_cases_orders_newest_first(temp_db):
+    create_case("CASE_OLD", "Old", "/old.E01", conn=temp_db)
+    create_case("CASE_NEW", "New", "/new.E01", conn=temp_db)
+    temp_db.execute(
+        "UPDATE cases SET created_at = ? WHERE case_id = ?",
+        ("2020-01-01T00:00:00+00:00", "CASE_OLD"),
+    )
+    temp_db.execute(
+        "UPDATE cases SET created_at = ? WHERE case_id = ?",
+        ("2024-01-01T00:00:00+00:00", "CASE_NEW"),
+    )
+    temp_db.commit()
+    cases = list_cases(conn=temp_db)
+    assert [c["case_id"] for c in cases[:2]] == ["CASE_NEW", "CASE_OLD"]
+
+
+def test_log_audit_appends_row(temp_db):
+    create_case("CASE_AUDIT", "Audit", "/img.E01", conn=temp_db)
+    log_audit("CASE_AUDIT", "unit_test", "persisted action", conn=temp_db)
+    row = temp_db.execute(
+        "SELECT action, details FROM audit_log WHERE case_id = ?",
+        ("CASE_AUDIT",),
+    ).fetchone()
+    assert row["action"] == "unit_test"
+    assert row["details"] == "persisted action"
+
+
+def test_get_artifacts_for_case_returns_counts(temp_db):
+    create_case("CASE_ART", "Artifacts", "/img.E01", conn=temp_db)
+    temp_db.execute(
+        "INSERT INTO files (case_id, path, size) VALUES (?, ?, ?)",
+        ("CASE_ART", "/WINDOWS/system32/cmd.exe", 100),
+    )
+    temp_db.execute(
+        """
+        INSERT INTO registry_entries (case_id, hive, key_path, value_name, value_data)
+        VALUES (?, 'SYSTEM', 'ControlSet001\\\\Enum\\\\USB', 'DeviceDesc', 'Hub')
+        """,
+        ("CASE_ART",),
+    )
+    temp_db.commit()
+    payload = get_artifacts_for_case("CASE_ART", conn=temp_db)
+    assert payload["file_count"] == 1
+    assert payload["registry_count"] == 1
+    assert payload["counts"]["files"] == 1
+    assert len(payload["registry"]) == 1

@@ -120,10 +120,13 @@ def test_registry_parser_populates_usb_device_history(mounted, parser_db):
     pcmcia = parser_db.execute(
         """
         SELECT COUNT(*) AS c FROM registry_entries
-        WHERE case_id = ? AND UPPER(value_data) LIKE '%WL110%'
-           OR (case_id = ? AND UPPER(key_path) LIKE '%WL110%')
+        WHERE case_id = ?
+          AND (
+            UPPER(value_data) LIKE '%WL110%'
+            OR UPPER(key_path) LIKE '%WL110%'
+          )
         """,
-        (CASE_ID, CASE_ID),
+        (CASE_ID,),
     ).fetchone()["c"]
     assert pcmcia > 0
 
