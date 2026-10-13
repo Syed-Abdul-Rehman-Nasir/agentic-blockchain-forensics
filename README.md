@@ -13,7 +13,7 @@ An offline-first desktop platform that ingests forensic disk images, coordinates
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-000000)](https://ollama.com/)
 [![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)]()
 
-[Capabilities](#what-this-project-demonstrates) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Investigation Flow](#typical-investigation-flow)
+[Capabilities](#what-this-project-demonstrates) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Investigation Flow](#typical-investigation-flow) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 
@@ -550,6 +550,13 @@ per GB depending on hardware and E01 compression).
 ```bash
 curl -s "$OLLAMA_HOST/api/tags"   # should list qwen2.5:3b
 ```
+
+---
+
+## Contributing and security
+
+- Contributor setup, commit conventions, and validation expectations: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Vulnerability reporting and evidence-handling expectations: [SECURITY.md](SECURITY.md)
 
 ---
 
