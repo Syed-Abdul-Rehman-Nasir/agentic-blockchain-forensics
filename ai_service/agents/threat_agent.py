@@ -32,6 +32,33 @@ class ThreatInterpretationAgent(BaseAgent):
             conn = get_connection()
 
         try:
+            # Checkpoint resume: do not re-score or insert duplicate assessments.
+            if "threat_analysis" in self.get_completed_stages(case_id, conn=conn):
+                row = conn.execute(
+                    """
+                    SELECT data_json, xgboost_score, autoencoder_score, flagged
+                    FROM artifacts
+                    WHERE case_id = ? AND artifact_type = 'threat_assessment'
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (case_id,),
+                ).fetchone()
+                if row is not None:
+                    features = json.loads(row["data_json"] or "{}")
+                    xgboost_score = float(row["xgboost_score"] or 0.0)
+                    flagged = bool(row["flagged"])
+                    # Anomaly bit is not stored separately; reconstruct conservatively.
+                    autoencoder_anomaly = bool(flagged and xgboost_score <= 0.6)
+                    return {
+                        "xgboost_score": xgboost_score,
+                        "autoencoder_score": float(row["autoencoder_score"] or 0.0),
+                        "autoencoder_anomaly": autoencoder_anomaly,
+                        "flagged": flagged,
+                        "features": dict(features),
+                        "resumed": True,
+                    }
+
             self.log_action(
                 case_id,
                 "threat_analysis_started",
