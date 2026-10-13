@@ -42,6 +42,8 @@ function truncate(str, n) {
 
 export async function renderEvidence(root, ctx) {
   const { state, navigate, toast, setSelectedCase } = ctx;
+  const isNavCurrent =
+    typeof ctx.isNavCurrent === 'function' ? ctx.isNavCurrent : () => true;
   let caseId = state.selectedCaseId;
   let pollTimer = null;
 
@@ -154,7 +156,9 @@ export async function renderEvidence(root, ctx) {
   }
 
   async function refresh() {
+    if (!isNavCurrent()) return;
     const status = await window.api.fetchAPI(`/cases/${encodeURIComponent(caseId)}/status`);
+    if (!isNavCurrent()) return;
     const { done, currentKey } = stageState(
       status.status,
       status.stages,
@@ -190,14 +194,18 @@ export async function renderEvidence(root, ctx) {
           window.api.fetchAPI(`/cases/${encodeURIComponent(caseId)}/artifacts`),
           window.api.fetchAPI(`/cases/${encodeURIComponent(caseId)}/threats`),
         ]);
+        if (!isNavCurrent()) return;
         artifactsHtml = renderArtifacts(arts, threats);
         threatHtml = renderThreatSummary(threats);
       } catch (err) {
+        if (!isNavCurrent()) return;
         artifactsHtml = `<div class="muted">Could not load artifacts: ${escapeHtml(err.message)}</div>`;
       }
     } else if (stillRunning) {
       artifactsHtml = '<div class="muted">Waiting for analysis to finish…</div>';
     }
+
+    if (!isNavCurrent()) return;
 
     const acqRaw = status.acquisition_hash;
     const acqMissing =

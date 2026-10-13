@@ -77,13 +77,14 @@ export function setChainIntegrity(_val) {
 export function toast(message, isError = false) {
   const el = document.createElement('div');
   el.className = `toast${isError ? ' error' : ''}`;
+  el.setAttribute('role', isError ? 'alert' : 'status');
   el.textContent = message;
   toastRoot.appendChild(el);
   setTimeout(() => el.remove(), 4200);
 }
 
 export function openModal(html) {
-  modalRoot.innerHTML = `<div class="modal">${html}</div>`;
+  modalRoot.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
   modalRoot.hidden = false;
   modalRoot.removeAttribute('hidden');
 }
@@ -155,7 +156,10 @@ export async function navigate(view, params = {}) {
   state.view = view;
   pageTitle.textContent = TITLES[view] || view;
   document.querySelectorAll('.nav-item').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.view === view);
+    const active = btn.dataset.view === view;
+    btn.classList.toggle('active', active);
+    if (active) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
   });
 
   content.innerHTML = '<div class="empty">Loading…</div>';
