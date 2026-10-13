@@ -6,6 +6,7 @@ file metadata for indexed extensions — to keep per-case documents under ~150,0
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -25,6 +26,12 @@ COLLECTION_NAME = "forensic_evidence"
 BATCH_SIZE = 500
 MAX_DOCS_PER_CASE = 150_000
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+
+def file_document_id(case_id: str, path: str) -> str:
+    """Stable Chroma document ID for a file path (independent of PYTHONHASHSEED)."""
+    digest = hashlib.sha256(path.encode("utf-8", errors="replace")).hexdigest()[:16]
+    return f"{case_id}_file_{digest}"
 
 INDEXABLE_EXTENSIONS = {
     # Documents
@@ -170,7 +177,7 @@ class VectorStore:
             )
             docs.append(
                 {
-                    "id": f"{case_id}_file_{hash(row['path'])}",
+                    "id": file_document_id(case_id, row["path"] or ""),
                     "text": text,
                     "type": "file_metadata",
                 }
