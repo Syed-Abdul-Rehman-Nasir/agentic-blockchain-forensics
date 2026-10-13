@@ -5,8 +5,11 @@
 const express = require('express');
 const aiService = require('../services/aiService');
 const orchestratorService = require('../services/orchestratorService');
+const { sendRouteError } = require('../utils/httpError');
 
 const router = express.Router({ mergeParams: true });
+
+const MAX_QUESTION_CHARS = 2000;
 
 /**
  * POST /api/cases/:id/chat
@@ -14,9 +17,14 @@ const router = express.Router({ mergeParams: true });
  */
 router.post('/', async (req, res) => {
   const caseId = req.params.id;
-  const question = req.body?.question;
+  const question = String(req.body?.question ?? '').trim();
   if (!question) {
     return res.status(400).json({ error: 'question is required' });
+  }
+  if (question.length > MAX_QUESTION_CHARS) {
+    return res.status(400).json({
+      error: `question must be at most ${MAX_QUESTION_CHARS} characters`,
+    });
   }
   try {
     const answer = await aiService.chat(caseId, question);
@@ -24,11 +32,9 @@ router.post('/', async (req, res) => {
     const audit = await orchestratorService.logChatAction(caseId, question);
     return res.json({ ...answer, audit });
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
 module.exports = router;
+module.exports.MAX_QUESTION_CHARS = MAX_QUESTION_CHARS;

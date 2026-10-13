@@ -4,6 +4,7 @@
 
 const express = require('express');
 const aiService = require('../services/aiService');
+const { sendRouteError } = require('../utils/httpError');
 
 const router = express.Router({ mergeParams: true });
 
@@ -18,10 +19,7 @@ router.get('/', async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 

@@ -5,6 +5,7 @@
 const express = require('express');
 const aiService = require('../services/aiService');
 const orchestratorService = require('../services/orchestratorService');
+const { sendRouteError } = require('../utils/httpError');
 
 const router = express.Router();
 
@@ -18,10 +19,7 @@ router.post('/', async (req, res) => {
     const result = await aiService.createCase(name, image_path, case_id);
     return res.status(201).json(result);
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
@@ -31,10 +29,7 @@ router.get('/', async (_req, res) => {
     const result = await aiService.listCases();
     return res.json(result);
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
@@ -68,10 +63,7 @@ router.post('/:id/analyse', async (req, res) => {
       message: 'Investigation started; poll GET /api/cases/:id/status',
     });
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
@@ -82,10 +74,7 @@ router.get('/:id/status', async (req, res) => {
     const inv = orchestratorService.getInvestigation(req.params.id);
     return res.json({ ...status, investigation: inv });
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
@@ -95,10 +84,7 @@ router.get('/:id/artifacts', async (req, res) => {
     const data = await aiService.getArtifacts(req.params.id);
     return res.json(data);
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
@@ -108,10 +94,7 @@ router.get('/:id/threats', async (req, res) => {
     const data = await aiService.getThreats(req.params.id);
     return res.json(data);
   } catch (err) {
-    const status = err.response?.status || 500;
-    return res.status(status).json({
-      error: err.response?.data?.detail || err.message,
-    });
+    return sendRouteError(res, err);
   }
 });
 
