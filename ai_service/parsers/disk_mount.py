@@ -214,16 +214,20 @@ class SplitRawImgInfo(pytsk3.Img_Info):
         self._sizes: List[int] = []
         self._offsets: List[int] = []  # start offset of each segment in the virtual disk
         running = 0
-        for path in segment_paths:
-            fh = open(path, "rb")
-            size = os.path.getsize(path)
-            self._files.append(fh)
-            self._sizes.append(size)
-            self._offsets.append(running)
-            running += size
-        self._total_size = running
-        # TSK_IMG_TYPE_EXTERNAL tells Sleuthkit to call our read()/get_size().
-        super().__init__(url="", type=pytsk3.TSK_IMG_TYPE_EXTERNAL)
+        try:
+            for path in segment_paths:
+                fh = open(path, "rb")
+                self._files.append(fh)
+                size = os.path.getsize(path)
+                self._sizes.append(size)
+                self._offsets.append(running)
+                running += size
+            self._total_size = running
+            # TSK_IMG_TYPE_EXTERNAL tells Sleuthkit to call our read()/get_size().
+            super().__init__(url="", type=pytsk3.TSK_IMG_TYPE_EXTERNAL)
+        except Exception:
+            self.close()
+            raise
 
     def get_size(self) -> int:
         return self._total_size
@@ -265,6 +269,12 @@ class SplitRawImgInfo(pytsk3.Img_Info):
             except OSError as exc:
                 logger.debug("Error closing image segment handle: %s", exc)
         self._files = []
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 class EwfImgInfo(pytsk3.Img_Info):

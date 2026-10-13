@@ -8,6 +8,7 @@ is possible.
 from __future__ import annotations
 
 import os
+import sqlite3
 from pathlib import Path
 from typing import List, Optional, Sequence
 
@@ -19,26 +20,32 @@ def extract_file(fs_info, image_path: str, temp_path: str) -> int:
     # Normalise leading slash for pytsk3 open()
     path = image_path if image_path.startswith("/") else f"/{image_path}"
     file_obj = fs_info.open(path)
-    meta = file_obj.info.meta
-    size = int(meta.size) if meta and meta.size is not None else 0
+    try:
+        meta = file_obj.info.meta
+        size = int(meta.size) if meta and meta.size is not None else 0
 
-    Path(temp_path).parent.mkdir(parents=True, exist_ok=True)
-    written = 0
-    with open(temp_path, "wb") as out:
-        offset = 0
-        while offset < size:
-            to_read = min(CHUNK_SIZE, size - offset)
-            data = file_obj.read_random(offset, to_read)
-            if not data:
-                break
-            out.write(data)
-            written += len(data)
-            offset += len(data)
-    return written
+        Path(temp_path).parent.mkdir(parents=True, exist_ok=True)
+        written = 0
+        with open(temp_path, "wb") as out:
+            offset = 0
+            while offset < size:
+                to_read = min(CHUNK_SIZE, size - offset)
+                data = file_obj.read_random(offset, to_read)
+                if not data:
+                    break
+                out.write(data)
+                written += len(data)
+                offset += len(data)
+        return written
+    finally:
+        try:
+            file_obj.close()
+        except Exception:
+            pass
 
 
 def find_files(
-    conn,
+    conn: sqlite3.Connection,
     case_id: str,
     like_patterns: Sequence[str],
     *,

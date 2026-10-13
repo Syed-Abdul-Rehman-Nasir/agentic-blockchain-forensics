@@ -64,67 +64,63 @@ def _insert_history(
 
 
 def _parse_chrome_db(temp_path: str, case_id: str, conn) -> int:
-    db = sqlite3.connect(f"file:{temp_path}?mode=ro", uri=True)
-    try:
-        rows = db.execute(
-            """
-            SELECT url, title, visit_count, last_visit_time
-            FROM urls
-            ORDER BY last_visit_time DESC
-            LIMIT 1000
-            """
-        ).fetchall()
-    except sqlite3.Error:
-        db.close()
-        return 0
+    with sqlite3.connect(f"file:{temp_path}?mode=ro", uri=True) as db:
+        try:
+            rows = db.execute(
+                """
+                SELECT url, title, visit_count, last_visit_time
+                FROM urls
+                ORDER BY last_visit_time DESC
+                LIMIT 1000
+                """
+            ).fetchall()
+        except sqlite3.Error:
+            return 0
 
-    for url, title, visit_count, last_visit_time in rows:
-        _insert_history(
-            conn,
-            case_id,
-            "chrome",
-            url or "",
-            title,
-            _webkit_to_iso(last_visit_time),
-            visit_count,
-        )
-    db.close()
-    return len(rows)
+        for url, title, visit_count, last_visit_time in rows:
+            _insert_history(
+                conn,
+                case_id,
+                "chrome",
+                url or "",
+                title,
+                _webkit_to_iso(last_visit_time),
+                visit_count,
+            )
+        return len(rows)
 
 
 def _parse_firefox_db(temp_path: str, case_id: str, conn) -> int:
-    db = sqlite3.connect(f"file:{temp_path}?mode=ro", uri=True)
-    try:
-        rows = db.execute(
-            """
-            SELECT url, title, visit_count, last_visit_date
-            FROM moz_places
-            WHERE url IS NOT NULL
-            ORDER BY last_visit_date DESC
-            LIMIT 1000
-            """
-        ).fetchall()
-    except sqlite3.Error:
-        db.close()
-        return 0
+    with sqlite3.connect(f"file:{temp_path}?mode=ro", uri=True) as db:
+        try:
+            rows = db.execute(
+                """
+                SELECT url, title, visit_count, last_visit_date
+                FROM moz_places
+                WHERE url IS NOT NULL
+                ORDER BY last_visit_date DESC
+                LIMIT 1000
+                """
+            ).fetchall()
+        except sqlite3.Error:
+            return 0
 
-    # Firefox last_visit_date is microseconds since Unix epoch
-    count = 0
-    for url, title, visit_count, last_visit_date in rows:
-        visit_time = None
-        if last_visit_date:
-            try:
-                visit_time = datetime.fromtimestamp(
-                    int(last_visit_date) / 1_000_000, tz=timezone.utc
-                ).isoformat()
-            except (OSError, OverflowError, ValueError):
-                visit_time = None
-        _insert_history(
-            conn, case_id, "firefox", url or "", title, visit_time, visit_count
-        )
-        count += 1
-    db.close()
-    return count
+        # Firefox last_visit_date is microseconds since Unix epoch
+        count = 0
+        for url, title, visit_count, last_visit_date in rows:
+            visit_time = None
+            if last_visit_date:
+                try:
+                    visit_time = datetime.fromtimestamp(
+                        int(last_visit_date) / 1_000_000, tz=timezone.utc
+                    ).isoformat()
+                except (OSError, OverflowError, ValueError):
+                    visit_time = None
+            _insert_history(
+                conn, case_id, "firefox", url or "", title, visit_time, visit_count
+            )
+            count += 1
+        return count
 
 
 def _clean_ie_location(location: str) -> str:

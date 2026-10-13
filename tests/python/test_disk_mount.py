@@ -26,6 +26,7 @@ from ai_service.parsers.disk_mount import (
     ingest_e01,
     mount_e01,
 )
+from ai_service.parsers.extract_utils import extract_file
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 NIST_IMAGE = PROJECT_ROOT / "data" / "test_images" / "SCHARDT.001"
@@ -103,6 +104,61 @@ def test_open_mislabeled_e01_concatenates_raw_segments(tmp_path):
         assert img.read(0, 8) == b"AAAABBBB"
     finally:
         img.close()
+
+
+def test_split_raw_img_info_closes_handles_on_partial_init_failure(tmp_path):
+    """A missing later segment must not leave earlier segment files open."""
+    first = tmp_path / "DISK.001"
+    first.write_bytes(b"AAAA")
+    missing = tmp_path / "DISK.002"
+
+    with pytest.raises(OSError):
+        SplitRawImgInfo([str(first), str(missing)])
+
+    # First segment must remain readable (no leaked exclusive handle).
+    assert first.read_bytes() == b"AAAA"
+
+
+def test_split_raw_img_info_close_is_idempotent(tmp_path):
+    first = tmp_path / "DISK.001"
+    first.write_bytes(b"ABCD")
+    img = SplitRawImgInfo([str(first)])
+    img.close()
+    img.close()
+    assert img._files == []
+
+
+def test_extract_file_closes_pytsk_handle(tmp_path):
+    """extract_file must always close the pytsk3 file handle, even on success."""
+
+    class _Meta:
+        size = 4
+
+    class _Info:
+        meta = _Meta()
+
+    class _File:
+        def __init__(self):
+            self.info = _Info()
+            self.closed = False
+
+        def read_random(self, offset: int, size: int) -> bytes:
+            return b"DATA"[offset : offset + size]
+
+        def close(self) -> None:
+            self.closed = True
+
+    opened = _File()
+
+    class _FS:
+        def open(self, _path: str):
+            return opened
+
+    out = tmp_path / "artifact.bin"
+    written = extract_file(_FS(), "/Windows/System32/config/SYSTEM", str(out))
+    assert written == 4
+    assert out.read_bytes() == b"DATA"
+    assert opened.closed is True
 
 
 def test_ingest_ewf_named_raw_streams_md5_not_ewfinfo(tmp_path, temp_db, monkeypatch):
